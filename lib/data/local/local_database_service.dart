@@ -1,3 +1,4 @@
+import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:restoranapp/data/model/restaurant_item.dart';
 
@@ -5,14 +6,6 @@ class LocalDatabaseService {
   static const String _databaseName = 'restaurant-app.db';
   static const String _tableName = 'restaurant';
   static const int _version = 1;
-
-  Database? _database;
-
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initializeDb();
-    return _database!;
-  }
 
   Future<void> createTables(Database database) async {
     await database.execute("""CREATE TABLE $_tableName(
@@ -27,8 +20,10 @@ class LocalDatabaseService {
 
   // make connection with database
   Future<Database> _initializeDb() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, _databaseName);
     return openDatabase(
-      _databaseName,
+      path,
       version: _version,
       onCreate: (Database database, int version) async {
         await createTables(database);
@@ -37,22 +32,22 @@ class LocalDatabaseService {
   }
 
   // create new item
-  Future<int> insertItem(RestaurantItem restaurant) async {
-    final db = await database;
+  Future<int> insertItem(RestaurantItem restaurantItem) async {
+    final db = await _initializeDb();
 
-    final data = restaurant.toJson();
+    final data = restaurantItem.toJson();
     print("INSERT DATA: $data");
-    final result = await db.insert(
+    final id = await db.insert(
       _tableName,
       data,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    return result;
+    return id;
   }
 
   // read all items
   Future<List<RestaurantItem>> getAllItems() async {
-    final db = await database;
+    final db = await _initializeDb();
     final results = await db.query(_tableName);
 
     return results.map((result) => RestaurantItem.fromJson(result)).toList();
@@ -60,7 +55,7 @@ class LocalDatabaseService {
 
   // todo-01-local-09: get a single item by id
   Future<RestaurantItem?> getItemById(String id) async {
-    final db = await database;
+    final db = await _initializeDb();
     final results = await db.query(
       _tableName,
       where: "id = ?",
@@ -73,7 +68,7 @@ class LocalDatabaseService {
 
   // todo-01-local-10: delete an item by id
   Future<int> removeItem(String id) async {
-    final db = await database;
+    final db = await _initializeDb();
 
     final result = await db.delete(
       _tableName,

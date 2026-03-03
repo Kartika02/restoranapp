@@ -17,15 +17,14 @@ class RestaurantItem {
 
   factory RestaurantItem.fromJson(Map<String, dynamic> json) {
     return RestaurantItem(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      pictureId: json['pictureId'],
-      city: json['city'],
-      rating: (json['rating'] as num).toDouble(),
+      id: json['id']?.toString() ?? '',
+      name: json['name'] ?? '',
+      description: json['description'] ?? '', // aman walau null
+      pictureId: json['pictureId']?.toString() ?? '',
+      city: json['city'] ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,

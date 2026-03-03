@@ -26,7 +26,7 @@ class RestaurantSearchProvider extends ChangeNotifier {
       return restaurant.name.toLowerCase().contains(query.toLowerCase());
     }).toList();
   }
-
+ 
   Future<void> searchRestaurant(String query) async {
     if (query.isEmpty) return;
 

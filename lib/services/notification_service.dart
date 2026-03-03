@@ -1,34 +1,160 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:restoranapp/services/http_service.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-class NotificationService {
-  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+final StreamController<String?> selectNotificationStream =
+    StreamController<String?>.broadcast();
 
-  static Future<void> init() async {
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
+final FlutterLocalNotificationsPlugin notificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+class NotificationService {
+  final HttpService httpService;
+
+  NotificationService(this.httpService);
+
+  Future<void> scheduleDaily11AMNotification({
+    required int id,
+    String channelId = "3",
+    String channelName = "Schedule Notification",
+  }) async {
+    final androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      channelId,
+      channelName,
+      importance: Importance.max,
+      priority: Priority.high,
+      ticker: 'ticker',
+    );
+    const iOSPlatformChannelSpecifics = DarwinNotificationDetails();
+
+    final notificationDetails = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
     );
 
-    const settings = InitializationSettings(android: androidSettings);
+    final datetimeSchedule = _nextInstanceOf11AM();
 
-    await _notificationsPlugin.initialize(settings);
+    await notificationsPlugin.zonedSchedule(
+      id,
+      'Daily scheduled notification title',
+      'This is a body of daily scheduled notification',
+      datetimeSchedule,
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
 
+  Future<List<PendingNotificationRequest>> pendingNotificationRequests() async {
+    final List<PendingNotificationRequest> pendingNotificationRequests =
+        await notificationsPlugin.pendingNotificationRequests();
+    return pendingNotificationRequests;
+  }
+
+  Future<void> cancelNotification(int id) async {
+    await notificationsPlugin.cancel(id);
+  }
+
+  Future<void> configureLocalTimeZone() async {
     tz.initializeTimeZones();
+    final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timeZoneName));
   }
 
-  static Future<void> requestPermission() async {
-    final androidImplementation = _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
+  tz.TZDateTime _nextInstanceOf11AM() {
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
 
-    await androidImplementation?.requestNotificationsPermission();
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      11,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(minutes: 1));
+    }
+
+    return scheduledDate;
   }
 
-Future<void> showNotification({
+  Future<void> init() async {
+    const initializationSettingsAndroid = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
+    const initializationSettingsDarwin = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    const initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin,
+    );
+    await notificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (notificationResponse) {
+        final payload = notificationResponse.payload;
+        if (payload != null && payload.isNotEmpty) {
+          selectNotificationStream.add(payload);
+        }
+      },
+    );
+  }
+
+  Future<bool> _isAndroidPermissionGranted() async {
+    return await notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.areNotificationsEnabled() ??
+        false;
+  }
+
+  Future<bool> _requestExactAlarmsPermission() async {
+    return await notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.requestExactAlarmsPermission() ??
+        false;
+  }
+
+  Future<bool?> requestPermissions() async {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final iOSImplementation = notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      return await iOSImplementation?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
+      final androidImplementation = notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      final requestNotificationsPermission = await androidImplementation
+          ?.requestNotificationsPermission();
+      final notificationEnabled = await _isAndroidPermissionGranted();
+      final requestAlarmEnabled = await _requestExactAlarmsPermission();
+      return (requestNotificationsPermission ?? false) &&
+          notificationEnabled &&
+          requestAlarmEnabled;
+    } else {
+      return false;
+    }
+  }
+
+  Future<void> showNotification({
     required int id,
     required String title,
     required String body,
@@ -51,60 +177,12 @@ Future<void> showNotification({
       android: androidPlatformChannelSpecifics,
       iOS: iOSPlatformChannelSpecifics,
     );
-    await flutterLocalNotificationsPlugin.show(
+    await notificationsPlugin.show(
       id,
       title,
       body,
       notificationDetails,
       payload: payload,
     );
-  }
-
-  static Future<void> scheduleDailyReminder() async {
-    await _notificationsPlugin.zonedSchedule(
-      0,
-      'Waktunya Makan Siang 🍽️',
-      'Jangan lupa cek restoran favoritmu!',
-      _nextInstanceOf11AM(),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'daily_channel_id',
-          'Daily Reminder',
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-      ),
-
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
-  }
-
-  static Future<void> cancelReminder() async {
-    await _notificationsPlugin.cancel(0);
-  }
-
-  Future<void> configureLocalTimeZone() async {
-    tz.initializeTimeZones();
-    final String timeZoneName = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timeZoneName));
-  }
-
-  static tz.TZDateTime _nextInstanceOf11AM() {
-    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-
-    tz.TZDateTime scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      11,
-    );
-
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
-    return scheduledDate;
   }
 }

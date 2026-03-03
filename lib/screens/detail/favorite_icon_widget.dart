@@ -13,22 +13,19 @@ class FavoriteIconWidget extends StatefulWidget {
 }
 
 class _FavoriteIconWidgetState extends State<FavoriteIconWidget> {
+  @override
   void initState() {
     super.initState();
-    // todo-03-action-02: change this provider using LocalDatabaseProvider
-    final localDatabaseProvider = context.read<LocalDatabaseProvider>();
-    final favoriteIconProvider = context.read<FavoriteIconProvider>();
+    _checkFavorite();
+  }
 
-    Future.microtask(() async {
-      // todo-03-action-03: change this action using LocalDatabaseProvider
-      await localDatabaseProvider.loadFavoritesValueById(
-        widget.restaurantItem.id,
-      );
-      final value = localDatabaseProvider.checkItemFavorite(
-        widget.restaurantItem.id,
-      );
-      favoriteIconProvider.isFavorite = value;
-    });
+  Future<void> _checkFavorite() async {
+    final provider = context.read<LocalDatabaseProvider>();
+    final isFav = await provider.checkItemFavorite(widget.restaurantItem.id);
+
+    if (!mounted) return;
+
+    context.read<FavoriteIconProvider>().isFavorite = isFav;
   }
 
   @override

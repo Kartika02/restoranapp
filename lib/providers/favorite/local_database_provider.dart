@@ -14,7 +14,7 @@ class LocalDatabaseProvider extends ChangeNotifier {
   String get message => _message;
 
   List<RestaurantItem>? _restaurantItemList = [];
-  List<RestaurantItem>? get favorites => _restaurantItemList;
+  List<RestaurantItem>? get restaurantItemList => _restaurantItemList;
 
   RestaurantItem? _restaurantItem;
   RestaurantItem? get restaurantItem => _restaurantItem;
@@ -27,12 +27,12 @@ class LocalDatabaseProvider extends ChangeNotifier {
       final isError = result == 0;
       if (isError) {
         _message = "Failed to save your data";
-        notifyListeners();
       } else {
+        print("INSERT ID: ${value.id}");
         _message = "Your data is saved";
-        await loadAllFavoritesValue();
-        notifyListeners();
       }
+      await loadAllFavoritesValue();
+      notifyListeners();
     } catch (e) {
       _message = "Failed to save your data";
       notifyListeners();
@@ -67,7 +67,6 @@ class LocalDatabaseProvider extends ChangeNotifier {
   Future<void> removeFavoritesValueById(String id) async {
     try {
       await _service.removeItem(id);
-
       _message = "Your data is removed";
       await loadAllFavoritesValue();
       notifyListeners();
@@ -77,8 +76,8 @@ class LocalDatabaseProvider extends ChangeNotifier {
     }
   }
 
-  bool checkItemFavorite(String id) {
-    final isSameRestaurant = _restaurantItem?.id == id;
-    return isSameRestaurant;
+  Future<bool> checkItemFavorite(String id) async {
+    final result = await _service.getItemById(id);
+    return result != null;
   }
 }
