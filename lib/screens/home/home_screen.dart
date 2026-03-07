@@ -8,6 +8,7 @@ import 'package:restoranapp/providers/main/theme_provider.dart';
 import 'package:restoranapp/screens/detail/detail_screen.dart';
 import 'package:restoranapp/screens/home/restaurant_card_widget.dart';
 import 'package:restoranapp/screens/setting/notification_screen.dart';
+import 'package:restoranapp/services/notification_service.dart';
 import 'package:restoranapp/static/restaurant_list_result_state.dart';
 import 'package:restoranapp/static/restaurant_search_result_state.dart';
 

@@ -9,15 +9,33 @@ class LocalDatabaseProvider extends ChangeNotifier {
 
   LocalDatabaseProvider(this._service);
 
-  // todo-02-provider-03: add a state to load a saving process and load a getting value process
   String _message = "";
   String get message => _message;
 
   List<RestaurantItem>? _restaurantItemList = [];
   List<RestaurantItem>? get restaurantItemList => _restaurantItemList;
 
+  List<RestaurantItem>? _filteredRestaurantList = [];
+  List<RestaurantItem>? get filteredRestaurantList => _filteredRestaurantList;
+
   RestaurantItem? _restaurantItem;
   RestaurantItem? get restaurantItem => _restaurantItem;
+
+  Future<void> searchFavorites(String query) async {
+    if (_restaurantItemList == null) return;
+    if (query.isEmpty) {
+      _filteredRestaurantList = _restaurantItemList;
+    } else {
+      _filteredRestaurantList = _restaurantItemList!
+          .where(
+            (restaurant) =>
+                restaurant.name.toLowerCase().contains(query.toLowerCase()),
+          )
+          .toList();
+    }
+
+    notifyListeners();
+  }
 
   // todo-02-provider-04: add a function to save a RestauratItem value
   Future<void> saveFavoritesValue(RestaurantItem value) async {
@@ -43,6 +61,7 @@ class LocalDatabaseProvider extends ChangeNotifier {
   Future<void> loadAllFavoritesValue() async {
     try {
       _restaurantItemList = await _service.getAllItems();
+      _filteredRestaurantList = _restaurantItemList;
       _message = "All of your data is loaded";
       notifyListeners();
     } catch (e) {

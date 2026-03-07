@@ -28,6 +28,7 @@ class ReminderProvider extends ChangeNotifier {
     await prefs.setBool(_key, value);
 
     if (value) {
+      await _notificationService.requestPermissions();
       await _notificationService.scheduleDaily11AMNotification(id: 1);
       final pending = await _notificationService.pendingNotificationRequests();
       print("Pending notifications: ${pending.length}");
@@ -38,7 +39,6 @@ class ReminderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  int _notificationId = 0;
   bool? _permission = false;
   bool? get permission => _permission;
 
@@ -48,22 +48,6 @@ class ReminderProvider extends ChangeNotifier {
   Future<void> requestPermissions() async {
     _permission = await _notificationService.requestPermissions();
     notifyListeners();
-  }
-
-  void showNotification() {
-    _notificationId += 1;
-    _notificationService.showNotification(
-      id: _notificationId,
-      title: "New Notification",
-      body: "This is a new notification with id $_notificationId",
-      payload: "This is a payload from notification with id $_notificationId",
-    );
-  }
-
-  // todo-02-provider-02: create a schedule notification
-  void scheduleDaily11AMNotification() {
-    _notificationId += 1;
-    _notificationService.scheduleDaily11AMNotification(id: _notificationId);
   }
 
   // todo-02-provider-03: show a list of pending notification

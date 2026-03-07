@@ -16,16 +16,7 @@ class RestaurantSearchProvider extends ChangeNotifier {
 
   List<RestaurantItem> _restaurants = [];
   List<RestaurantItem> get restaurants => _restaurants;
-  List<RestaurantItem> filterFavorites(
-    List<RestaurantItem> favorites,
-    String query,
-  ) {
-    if (query.isEmpty) return favorites;
-
-    return favorites.where((restaurant) {
-      return restaurant.name.toLowerCase().contains(query.toLowerCase());
-    }).toList();
-  }
+  
  
   Future<void> searchRestaurant(String query) async {
     if (query.isEmpty) return;

@@ -4,11 +4,13 @@ import 'package:restoranapp/data/model/restaurant_item.dart';
 class RestaurantCard extends StatelessWidget {
   final RestaurantItem restaurant;
   final Function() onTap;
+  final Widget? trailing;
 
   const RestaurantCard({
     super.key,
     required this.restaurant,
     required this.onTap,
+    this.trailing,
   });
 
   @override
@@ -80,6 +82,7 @@ class RestaurantCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (trailing != null) trailing!,
           ],
         ),
       ),

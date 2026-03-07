@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -20,9 +20,20 @@ class NotificationService {
 
   Future<void> scheduleDaily11AMNotification({
     required int id,
+
     String channelId = "3",
     String channelName = "Schedule Notification",
   }) async {
+    final result = await httpService.getDataFromUrl(
+      "https://restaurant-api.dicoding.dev/list",
+    );
+
+    final jsonData = jsonDecode(result);
+
+    final restaurants = jsonData['restaurants'];
+
+    restaurants.shuffle();
+    final restaurant = restaurants.first;
     final androidPlatformChannelSpecifics = AndroidNotificationDetails(
       channelId,
       channelName,
@@ -41,10 +52,11 @@ class NotificationService {
 
     await notificationsPlugin.zonedSchedule(
       id,
-      'Daily scheduled notification title',
-      'This is a body of daily scheduled notification',
+      '🍜 Rekomendasi Restoran Hari Ini',
+      restaurant['name'],
       datetimeSchedule,
       notificationDetails,
+      payload: restaurant['id'],
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
@@ -78,7 +90,7 @@ class NotificationService {
     );
 
     if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(minutes: 1));
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
     return scheduledDate;
@@ -152,37 +164,5 @@ class NotificationService {
     } else {
       return false;
     }
-  }
-
-  Future<void> showNotification({
-    required int id,
-    required String title,
-    required String body,
-    required String payload,
-    String channelId = "1",
-    String channelName = "Simple Notification",
-  }) async {
-    final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      channelId,
-      channelName,
-      importance: Importance.max,
-      priority: Priority.high,
-      sound: const RawResourceAndroidNotificationSound('slow_spring_board'),
-    );
-    const iOSPlatformChannelSpecifics = DarwinNotificationDetails(
-      sound: 'slow_spring_board.aiff',
-      presentSound: true,
-    );
-    final notificationDetails = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-      iOS: iOSPlatformChannelSpecifics,
-    );
-    await notificationsPlugin.show(
-      id,
-      title,
-      body,
-      notificationDetails,
-      payload: payload,
-    );
   }
 }

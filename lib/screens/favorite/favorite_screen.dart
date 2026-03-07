@@ -4,9 +4,7 @@ import 'package:restoranapp/data/api/api_service.dart';
 import 'package:restoranapp/providers/detail/restaurant_detail_provider.dart';
 import 'package:restoranapp/providers/favorite/local_database_provider.dart';
 import 'package:restoranapp/screens/detail/detail_screen.dart';
-import 'package:restoranapp/providers/home/restaurant_search_provider.dart';
 import 'package:restoranapp/screens/home/restaurant_card_widget.dart';
-import 'package:restoranapp/static/restaurant_search_result_state.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -34,13 +32,6 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final favoriteProvider = context.watch<LocalDatabaseProvider>();
-    final searchProvider = context.read<RestaurantSearchProvider>();
-
-    // final filteredList = searchProvider.filterFavorites(
-    //   favoriteProvider.favorites ?? [],
-    //   _query,
-    // );
     return Scaffold(
       appBar: AppBar(title: const Text("Favorite List")),
       // todo-03-action-01: change this provider to LocalDatabaseProvider
@@ -60,89 +51,61 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
               onSubmitted: (value) {
                 final query = value.trim();
                 if (query.isNotEmpty) {
-                  searchProvider.searchRestaurant(query);
+                  context.read<LocalDatabaseProvider>().searchFavorites(query);
                 }
               },
               onChanged: (value) {
                 if (value.isEmpty) {
-                  searchProvider.reset(); // balik ke list
+                  context
+                      .read<LocalDatabaseProvider>()
+                      .loadAllFavoritesValue(); // balik ke list
                 }
               },
             ),
           ),
           Expanded(
-            child: Consumer2<LocalDatabaseProvider, RestaurantSearchProvider>(
-             builder: (context, value, searchProvider, _) {
-                final searchState = searchProvider.state;
-                
-                if (searchState is RestaurantSearchLoadingState) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (searchState is RestaurantSearchLoadedState) {
-                  return ListView.builder(
-                    itemCount: searchState.restaurants.length,
-                    itemBuilder: (context, index) {
-                      final restaurant = searchState.restaurants[index];
-                      return RestaurantCard(
-                        restaurant: restaurant,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChangeNotifierProvider(
-                                create: (context) => RestaurantDetailProvider(
-                                  context.read<ApiServices>(),
-                                )..fetchRestaurantDetail(restaurant.id),
-                                child: DetailScreen(
-                                  restaurantId: restaurant.id,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  );
+            child: Consumer<LocalDatabaseProvider>(
+              builder: (context, value, child) {
+                final favoriteList =
+                    value.filteredRestaurantList ??
+                    value.restaurantItemList ??
+                    [];
+
+                if (favoriteList.isEmpty) {
+                  return const Center(child: Text("No Favorite"));
                 }
 
-                if (searchState is RestaurantSearchErrorState) {
-                  return Center(child: Text(searchState.message));
-                }
-                
-                final favoriteList = value.restaurantItemList ?? [];
-                return switch (favoriteList.isNotEmpty) {
-                  true => ListView.builder(
-                    itemCount: favoriteList.length,
-                    itemBuilder: (context, index) {
-                      final restaurant = favoriteList[index];
+                return ListView.builder(
+                  itemCount: favoriteList.length,
+                  itemBuilder: (context, index) {
+                    final restaurant = favoriteList[index];
 
-                      return RestaurantCard(
-                        restaurant: restaurant,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChangeNotifierProvider(
-                                create: (context) => RestaurantDetailProvider(
-                                  context.read<ApiServices>(),
-                                )..fetchRestaurantDetail(restaurant.id),
-                                child: DetailScreen(
-                                  restaurantId: restaurant.id,
-                                ),
-                              ),
-                            ),
-                          );
+                    return RestaurantCard(
+                      restaurant: restaurant,
+                      trailing: IconButton(
+                        icon: const Icon(Icons.favorite, color: Colors.red),
+                        onPressed: () {
+                          context
+                              .read<LocalDatabaseProvider>()
+                              .removeFavoritesValueById(restaurant.id);
                         },
-                      );
-                    },
-                  ),
-                  _ => const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [Text("No Favorite")],
-                    ),
-                  ),
-                };
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChangeNotifierProvider(
+                              create: (context) => RestaurantDetailProvider(
+                                context.read<ApiServices>(),
+                              )..fetchRestaurantDetail(restaurant.id),
+                              child: DetailScreen(restaurantId: restaurant.id),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
               },
             ),
           ),
