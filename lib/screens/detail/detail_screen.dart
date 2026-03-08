@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:restoranapp/providers/detail/restaurant_detail_provider.dart';
 import 'package:restoranapp/providers/favorite/local_database_provider.dart';
 import 'package:restoranapp/screens/detail/favorite_icon_widget.dart';
+import 'package:restoranapp/screens/detail/readmore_screen.dart';
 import 'package:restoranapp/static/restaurant_detail_result_state.dart';
 
 class DetailScreen extends StatefulWidget {
@@ -274,52 +275,6 @@ class _DetailScreenState extends State<DetailScreen> {
           return const SizedBox();
         },
       ),
-    );
-  }
-}
-
-class ExpandableDescription extends StatefulWidget {
-  final String text;
-
-  const ExpandableDescription({super.key, required this.text});
-
-  @override
-  State<ExpandableDescription> createState() => _ExpandableDescriptionState();
-}
-
-class _ExpandableDescriptionState extends State<ExpandableDescription> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        AnimatedSize(
-          duration: const Duration(milliseconds: 250),
-          child: Text(
-            widget.text,
-            maxLines: _expanded ? null : 3,
-            overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ),
-        const SizedBox(height: 6),
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _expanded = !_expanded;
-            });
-          },
-          child: Text(
-            _expanded ? "Read Less" : "Read More",
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

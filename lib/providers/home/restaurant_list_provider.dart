@@ -24,11 +24,14 @@ class RestaurantListProvider extends ChangeNotifier {
           _mapErrorToMessage(result.message),
         );
         notifyListeners();
+      } else if (result.restaurants.isEmpty) {
+        _resultState = RestaurantListErrorState('Data restoran kosong');
+        notifyListeners();
       } else {
         _resultState = RestaurantListLoadedState(result.restaurants);
         notifyListeners();
       }
-    } on Exception catch (e) {
+    } catch (e) {
       _resultState = RestaurantListErrorState(_mapErrorToMessage(e));
       notifyListeners();
     }

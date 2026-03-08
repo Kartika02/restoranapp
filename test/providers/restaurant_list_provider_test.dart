@@ -1,14 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
+
+import 'package:restoranapp/data/model/restaurant_item.dart';
 import 'package:restoranapp/data/model/restaurant_list_response.dart';
 import 'package:restoranapp/providers/home/restaurant_list_provider.dart';
 import 'package:restoranapp/data/api/api_service.dart';
 import 'package:restoranapp/static/restaurant_list_result_state.dart';
 
-class MockApiServices extends Mock implements ApiServices {}
+import 'restaurant_list_provider_test.mocks.dart';
 
-
-
+@GenerateMocks([ApiServices])
 void main() {
   late MockApiServices mockApi;
   late RestaurantListProvider provider;
@@ -16,6 +18,7 @@ void main() {
   setUp(() {
     mockApi = MockApiServices();
     provider = RestaurantListProvider(mockApi);
+    reset(mockApi);
   });
 
   /// Test state awal
@@ -29,10 +32,21 @@ void main() {
       error: false,
       message: '',
       count: 1,
-      restaurants: [],
+      restaurants: [
+        RestaurantItem(
+          id: "rqdv5juczeskfw1e867",
+          name: "Melting Pot",
+          description:
+              "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. ...",
+          pictureId: "14",
+          city: "Medan",
+          rating: 4.2,
+        ),
+      ],
     );
-
-    when(mockApi.getRestaurantList()).thenAnswer((_) async => result);
+    when(mockApi.getRestaurantList()).thenAnswer((_) async {
+      return result;
+    });
 
     await provider.fetchRestaurantList();
 

@@ -4,6 +4,7 @@ import 'package:restoranapp/data/api/api_service.dart';
 import 'package:restoranapp/data/local/local_database_service.dart';
 import 'package:restoranapp/providers/detail/favorite_icon_provider.dart';
 import 'package:restoranapp/providers/detail/restaurant_detail_provider.dart';
+import 'package:restoranapp/providers/detail/readmore_provider.dart';
 import 'package:restoranapp/providers/favorite/local_database_provider.dart';
 import 'package:restoranapp/providers/home/restaurant_list_provider.dart';
 import 'package:restoranapp/providers/home/restaurant_search_provider.dart';
@@ -44,6 +45,8 @@ void main() async {
             // todo-01-notif-07: configure the timezone
             ..configureLocalTimeZone(),
         ),
+        ChangeNotifierProvider(create: (_) => ReadMoreProvider()),
+  
         ChangeNotifierProvider(create: (context) => IndexNavProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(
